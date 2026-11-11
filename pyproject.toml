@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gdex_python_gdexms"
+version = "0.1.0"
+authors = [
+  { name="Zaihua Ji", email="zji@ucar.edu" },
+]
+description = "GDEX Python web application for GDEX specialists, deployed on CIRRUS"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 1 - Planning",
+]
+dependencies = [
+  "rda_python_common>=3.0.31",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/NCAR/gdex-python-gdexms"
