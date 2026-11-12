@@ -18,7 +18,7 @@ classifiers = [
     "Development Status :: 1 - Planning",
 ]
 dependencies = [
-  "rda_python_common>=3.0.31",
+  "rda_python_common>=3.0.34",
   "flask>=3.0",
   "gunicorn>=22.0",
 ]
