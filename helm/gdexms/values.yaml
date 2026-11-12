@@ -1,0 +1,40 @@
+replicaCount: 2                           # Pods share state only through the signed session cookie
+
+webapp:
+  name: gdexms                            # Name for k8s objects
+  group: gdexms                           # Group label for related resources
+  path: /                                 # URL path suffix
+  tls:
+    # CIRRUS FQDNs end in .k8s.ucar.edu today; gdexms.gdex.ucar.edu is the planned
+    # name once CIRRUS can write *.gdex.ucar.edu records. The OIDC redirect URI
+    # (https://<fqdn>/auth/callback) must match whichever is used.
+    fqdn: gdexms.k8s.ucar.edu
+    secretName: incommon-cert-gdexms      # Unique TLS secret name for the FQDN
+  ingress:
+    visibility: internal                  # internal = UCAR network/VPN only
+  container:
+    image: hub.k8s.ucar.edu/gdex/gdexms:0.1.0   # TODO: registry project name from CIRRUS; tag set by the build workflow
+    port: 8080                            # gunicorn port (see Dockerfile)
+    requests:
+      memory: 256M
+      cpu: 0.25
+    limits:
+      memory: 512M
+      cpu: 1
+  env: {}                                 # Plain (non-secret) env vars, e.g. DSSDBHOST: <db host>
+  secretStore: user-ro                    # SecretStore set up in our namespace by CIRRUS admins (confirm name)
+  # Each entry maps one OpenBao path/property to an env var in the container.
+  # TODO: confirm the OpenBao paths with CIRRUS (shared path for the GDEX team).
+  secrets:
+    - envVar: FLASK_SECRET_KEY            # Signs session cookies; same value on all replicas
+      path: gdex/gdexms
+      property: flask_secret_key
+    - envVar: OIDC_CLIENT_ID              # Entra ID client from the CIRRUS team (Kevin/Varsha)
+      path: gdex/gdexms
+      property: oidc_client_id
+    - envVar: OIDC_CLIENT_SECRET
+      path: gdex/gdexms
+      property: oidc_client_secret
+    - envVar: PGDB01_DSSDBPASS            # dssdb password; rda_python_common reads <NODE>_<KEY>
+      path: gdex/pgdb01
+      property: dssdbpass

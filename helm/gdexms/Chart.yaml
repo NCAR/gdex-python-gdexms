@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gdexms
+description: GDEX specialist web application (gdexms) on CIRRUS, with secrets from OpenBao
+type: application
+version: 0.1.0          # Chart version; increment when templates change
+appVersion: "0.1.0"     # gdexms version; keep in step with the image tag

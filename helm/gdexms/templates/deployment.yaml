@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.webapp.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.webapp.name }}
+    group: {{ .Values.webapp.group }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.webapp.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.webapp.name }}
+    spec:
+      containers:
+      - name: {{ .Values.webapp.name }}
+        image: {{ .Values.webapp.container.image }}
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: {{ .Values.webapp.container.requests.memory }}
+            cpu: {{ .Values.webapp.container.requests.cpu }}
+          limits:
+            memory: {{ .Values.webapp.container.limits.memory }}
+            cpu: {{ .Values.webapp.container.limits.cpu }}
+        ports:
+        - containerPort: {{ .Values.webapp.container.port }}
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.webapp.container.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.webapp.container.port }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        env:
+        {{- range $name, $value := .Values.webapp.env }}
+        - name: {{ $name }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- range .Values.webapp.secrets }}
+        - name: {{ .envVar }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.webapp.name }}-esos
+              key: {{ .envVar }}
+        {{- end }}

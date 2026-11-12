@@ -19,6 +19,8 @@ classifiers = [
 ]
 dependencies = [
   "rda_python_common>=3.0.31",
+  "flask>=3.0",
+  "gunicorn>=22.0",
 ]
 
 [tool.pytest.ini_options]
