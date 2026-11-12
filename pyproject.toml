@@ -30,3 +30,9 @@ pythonpath = [
 
 [project.urls]
 "Homepage" = "https://github.com/NCAR/gdex-python-gdexms"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gdex_python_gdexms = ["static/**/*", "templates/*.html"]

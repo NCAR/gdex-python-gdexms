@@ -127,6 +127,15 @@ class EditorDB(PgDBI):
       names = list(cols)
       return [dict(zip(names, vals)) for vals in zip(*(cols[n] for n in names))]
 
+   def query(self, sqlstr, vals=None):
+      """Run a complete SELECT statement; returns all rows as a list of dicts."""
+      return self.rows(None, None, sqlstr, vals)
+
+   def query_one(self, sqlstr, vals=None):
+      """Run a complete SELECT statement; returns the first row as a dict, or None."""
+      rows = self.query(sqlstr, vals)
+      return rows[0] if rows else None
+
    def count(self, tables, cond=None, vals=None):
       """Return the number of matching rows."""
       return self._call(self.pgget, tables, None, cond, 0, cndvals=vals) or 0

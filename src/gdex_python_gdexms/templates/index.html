@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+   <link href="css/rda_config.css" rel="stylesheet" type="text/css" />
+   <title>RDAMS CONFIGURATION EDITOR</title>
+   <style type="text/css">
+      #left details { margin: 2px 0 2px 4px; }
+      #left summary { cursor: pointer; font-weight: bold; }
+      #left ul { list-style: none; margin: 2px 0 6px 0; padding-left: 14px; }
+      #left a { color: #011837; text-decoration: none; }
+      #left a:hover { text-decoration: underline; }
+      #left .todo { color: #6b7a90; font-style: italic; }
+      #user { float: right; margin: 8px 16px 0 0; font-size: 90%; }
+   </style>
+   <script type="text/javascript">
+      function resizeContainer() {
+         var h = window.innerHeight - 135;
+         document.getElementById('container').style.height = h + "px";
+      }
+   </script>
+</head>
+<body onload="resizeContainer()" onresize="resizeContainer()">
+   <div id="user">{{ user }}</div>
+   <h1 align="Center">RDAMS POSTGRESQL CONFIGURATION EDITOR</h1>
+   <div id="container">
+      <div id="left">
+         <details open><summary>CONFIGURATION MENU</summary>
+         {% for group, items in menu %}
+            <details><summary>{{ group }}</summary>
+               <ul>
+               {% for text, page, ready in items %}
+                  {% if ready %}
+                  <li><a href="{{ page }}.php" target="iframe1">{{ text }}</a></li>
+                  {% else %}
+                  <li class="todo" title="Not ported yet">{{ text }}</li>
+                  {% endif %}
+               {% endfor %}
+               </ul>
+            </details>
+         {% endfor %}
+         </details>
+      </div>
+      <div id="right">
+         <iframe id="iframe1" name="iframe1"></iframe>
+      </div>
+   </div>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+   <head>
+      <title>RDAMS Configuration Editor</title>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <link href="css/table_styles.css" rel="stylesheet" type="text/css" />
+      <link href="css/icon_styles.css" rel="stylesheet" type="text/css" />
+
+      <script type="text/javascript" src="js/prototype.js"></script>
+      <script type="text/javascript" src="js/scriptaculous-js/scriptaculous.js"></script>
+      <script type="text/javascript" src="js/lang/lang_vars-en.js"></script>
+      <script type="text/javascript" src="js/validation.js"></script>
+      <script type="text/javascript" src="js/ajax_table_editor.js"></script>
+      
+      <!-- calendar files -->
+      <link rel="stylesheet" type="text/css" media="all" href="js/jscalendar/skins/aqua/theme.css" title="win2k-cold-1" /> 
+      <script type="text/javascript" src="js/jscalendar/calendar.js"></script>
+      <script type="text/javascript" src="js/jscalendar/lang/calendar-en.js"></script>
+      <script type="text/javascript" src="js/jscalendar/calendar-setup.js"></script>
+   </head>
+   <body>
+{{ pre_html|safe }}   <style type="text/css">
+   #splitContainer {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 90px);
+      min-height: 200px;
+   }
+   #topPane {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      min-height: 80px;
+      padding-bottom: 4px;
+   }
+   #splitHandle {
+      flex: 0 0 8px;
+      background: linear-gradient(to bottom, #d4dae8, #bfc8da);
+      cursor: row-resize;
+      user-select: none;
+      border-top: 1px solid #a8b4c8;
+      border-bottom: 1px solid #a8b4c8;
+      text-align: center;
+      font-size: 11px;
+      color: #6677aa;
+      line-height: 8px;
+      letter-spacing: 4px;
+   }
+   #splitHandle:hover { background: linear-gradient(to bottom, #bfc8da, #aab4cc); }
+   #bottomPane {
+      flex: 0 0 auto;
+      overflow-y: auto;
+      min-height: 50px;
+      background: #f4f6fb;
+      padding: 6px 8px;
+      border-top: 2px solid #8899bb;
+   }
+   #titleLayer {
+      padding: 5px 8px;
+      font-weight: bold;
+      font-size: 20px;
+      text-align: center;
+      background: #dce4f5;
+      border-bottom: 1px solid #b0bcd8;
+      margin-bottom: 4px;
+   }
+   #information { padding: 4px; }
+   </style>
+
+   <div id="ajaxLoader">
+      <table align=left>
+         <tr valign="middle">
+            <td><img src="images/spinarrows1.gif" width=40></td>
+            <td><span style="font-size:120%; font-style:italic">Loading Data ...</span></td>
+         </tr>
+      </table>
+   </div>
+   <div id="historyContainer">
+      <div id="information"></div>
+      <div id="titleLayer"></div>
+      <div id="splitContainer">
+         <div id="topPane">
+            <div id="tableLayer" align="center"></div>
+            <div id="searchButtonsLayer" align="center"></div>
+         </div>
+         <div id="splitHandle" title="Drag to resize">&#183;&#183;&#183;&#183;&#183;&#183;&#183;</div>
+         <div id="bottomPane" style="display: none;">
+            <div id="recordLayer" align="center"></div>
+         </div>
+      </div>
+   </div>
+   <script type="text/javascript">
+      trackHistory = false;
+      var ajaxUrl = {{ ajax_url|tojson }};
+      toAjaxTableEditor('update_html','');
+
+      (function() {
+         var handle = document.getElementById('splitHandle');
+         var topPane = document.getElementById('topPane');
+         var bottomPane = document.getElementById('bottomPane');
+         var dragging = false, startY, startTopH, startBottomH;
+         handle.addEventListener('mousedown', function(e) {
+            dragging = true;
+            startY = e.clientY;
+            startTopH = topPane.offsetHeight;
+            startBottomH = bottomPane.offsetHeight;
+            e.preventDefault();
+         });
+         document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            topPane.style.flex = 'none';
+            topPane.style.height = Math.max(80, startTopH + (e.clientY - startY)) + 'px';
+            bottomPane.style.height = Math.max(50, startBottomH - (e.clientY - startY)) + 'px';
+            e.preventDefault();
+         });
+         document.addEventListener('mouseup', function() { dragging = false; });
+      })();
+
+      function showRecordPane() {
+         var bp = document.getElementById('bottomPane');
+         if (bp.style.display === 'none') {
+            var tp = document.getElementById('topPane');
+            tp.style.flex = 'none';
+            tp.style.height = tp.offsetHeight + 'px';
+            bp.style.height = '380px';
+            bp.style.display = 'block';
+         }
+         bp.scrollTop = 0;
+         bp.scrollIntoView({behavior: 'smooth', block: 'start'});
+      }
+      function hideRecordPane() {
+         document.getElementById('bottomPane').style.display = 'none';
+         var tp = document.getElementById('topPane');
+         tp.style.flex = '1 1 auto';
+         tp.style.height = '';
+      }
+
+      // Release record lock when page is closed or navigated away
+      function releaseLockBeacon() {
+         if(typeof editLocked !== 'undefined' && editLocked && typeof ajaxUrl !== 'undefined') {
+            var payload = new URLSearchParams({json: JSON.stringify({action: 'release_lock', info: ''})});
+            navigator.sendBeacon(ajaxUrl, payload);
+            editLocked = false;
+         }
+      }
+      window.addEventListener('pagehide', releaseLockBeacon);
+      window.addEventListener('beforeunload', releaseLockBeacon);
+   </script>
+   </body>
+</html>

@@ -1,0 +1,122 @@
+body {
+   margin: 0;
+   padding: 0;
+   background-color: #2e6da4;
+   color: #f6f7f6;
+}
+
+h1 {
+   color: #e8f4ff;
+   letter-spacing: 3px;
+   text-shadow:
+      1px 1px 0 #0d3a6b,
+      2px 2px 0 #0b3260,
+      3px 3px 0 #092a54,
+      4px 4px 0 #072248,
+      5px 5px 8px rgba(0,0,0,0.5);
+}
+
+#container {
+   margin:1%;
+   padding:0;
+   width:97%;
+   height:90%;
+   resize: both;
+}
+
+#left {
+   float: left;
+   width: 12.5%;
+   margin: 1% 0 1% 1%;
+   padding: 1%;
+   background-color: #e3edf8;
+   color: #011837;
+   overflow:auto;
+   border: 2px solid #1a4a7a;
+   border-radius: 4px;
+   box-shadow: 3px 3px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+#right {
+   float: right;
+   width: 80.5%;
+   margin: 1% 1% 1% 0;
+   padding: 1%;
+   background-color: #ddeaf7;
+   height: 99%;
+   border: 2px solid #1a4a7a;
+   border-radius: 4px;
+   box-shadow: 3px 3px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+#iframe1 {
+	margin:0;
+	border-width:0px;
+   padding:0;
+   top: 50px;
+   width: 100%;
+   height: 100%;
+   overflow:auto;
+}
+
+.clear {
+   height: 0;
+   font-size: 1px;
+   margin: 0;
+   padding: 0;
+   line-height: 0;
+   clear: both;
+}
+
+.popup{ position:relative;}
+
+.popup > aside{
+   -moz-transition: all .2s ease-in-out; 
+   -webkit-transition: all .2s ease-in-out; 
+   -o-transition: all .2s ease-in-out; 
+   -ms-transition: all .2s ease-in-out; 
+   transition: all .2s ease-in-out; 
+   -moz-transform: scale(0);
+   -webkit-transform: scale(0);
+   -o-transform: scale(0);
+   -ms-transform: scale(0);
+   transform: scale(0);
+   position:absolute;
+   background: white;
+   color:black;
+   border:1px solid black;
+   border-radius: 5px;
+   padding:5px;
+   width: 200px;
+   bottom:120%;
+   left:0;
+}
+
+.popup > aside:before,aside:after {
+   content: ".";
+   position: absolute;
+   color:transparent;
+   top:100%;
+   width: 0;
+   height: 0;
+   left:4px;
+   border-left: 11px solid transparent;
+   border-right: 11px solid transparent;
+   border-top: 11px solid black;
+}
+
+.popup > aside:after {
+   left:5px;
+   border-left: 10px solid transparent;
+   border-right: 10px solid transparent;
+   border-top: 10px solid white;
+}
+
+.popup:hover > aside{
+   -moz-transform: scale(1.0);
+   -webkit-transform: scale(1.0);
+   -o-transform: scale(1.0);
+   -ms-transform: scale(1.0);
+   transform: scale(1.0);
+}
+
