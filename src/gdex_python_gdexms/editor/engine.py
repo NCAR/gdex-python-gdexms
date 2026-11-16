@@ -250,6 +250,8 @@ class TableEditor(EditMixin):
       self.defined_default = None
       self.after_add_fun = self.after_edit_fun = self.after_delete_fun = self.after_copy_fun = None
       self.check_delete_fun = self.add_screen_fun = self.edit_screen_fun = None
+      self.before_edit_array = None    # columns whose old values an after-edit hook needs
+      self.before_edit = {}            # {row id: {column: old value}}, filled before an update
 
    CONFIG_NAMES = {
       'tableInfo': 'table_info', 'orderByColumn': 'order_by_column', 'addRowTitle': 'add_row_title',
@@ -261,6 +263,7 @@ class TableEditor(EditMixin):
       'afterCopyFun': 'after_copy_fun', 'checkDeleteFun': 'check_delete_fun', 'addScreenFun': 'add_screen_fun',
       'editScreenFun': 'edit_screen_fun', 'allowEditMult': 'allow_edit_mult', 'showHideTitle': 'show_hide_title',
       'orderColTitle': 'order_col_title', 'editTableInfo': 'edit_table_info', 'addTableInfo': 'add_table_info',
+      'beforeEditArray': 'before_edit_array',
    }
 
    def set_config(self, var, val):
@@ -824,9 +827,12 @@ class TableEditor(EditMixin):
       if not val or val == '0':
          return val
       field = valid_ident(info.get('query_column') or col)
-      query = sql_lit(re.split(r' order by ', info['select_query'], maxsplit=1, flags=re.I)[0])
+      vals = list(info.get('select_vals') or [])
+      query = re.split(r' order by ', info['select_query'], maxsplit=1, flags=re.I)[0]
+      if not vals:
+         query = sql_lit(query)      # no bound values yet: a literal % must be doubled
       query += (' and ' if re.search(r' where ', query, re.I) else ' where ') + field + ' = %s'
-      row = self.db.query_one(query, [val])
+      row = self.db.query_one(query, vals + [val])
       vals = list(row.values()) if row else []
       if len(vals) > 1 and vals[1] not in (None, ''):
          val = '{} - {}'.format(val, php_str(vals[1]))

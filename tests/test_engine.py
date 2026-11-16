@@ -200,7 +200,8 @@ def test_routes(client):
    assert client.get('/css/table_styles.css').status_code == 200
    assert client.get('/nosuch.php').status_code == 404
    menu = client.get('/')
-   assert b'href="rdadb_org_type.php"' in menu.data and b'Not ported yet' in menu.data
+   assert b'href="rdadb_org_type.php"' in menu.data and b'Not ported yet' not in menu.data
+   assert menu.data.count(b'.php" target="iframe1"') == 27
 
 
 def test_requires_user():

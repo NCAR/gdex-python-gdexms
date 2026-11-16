@@ -196,7 +196,7 @@ class EditMixin:
       return "prepareForCalendar(document.getElementById('{0}'),'{0}','{1}',{2},'{3}',{4});".format(
          col, fmt, reset, extra, hide)
 
-   def get_select(self, query, name, default='', other='', exclusive=False):
+   def get_select(self, query, name, default='', other='', exclusive=False, vals=None):
       multiple = 'multiple' in (other or '')
       opts = ''
       if exclusive and multiple:
@@ -204,7 +204,7 @@ class EditMixin:
          opts = '<option value="!"{}>! - {}</option>'.format(sel, LANG['exclusiveSelect'])
       found_default = found_defined = False
       defined = self.defined_default
-      for rec in self.db.query(query):
+      for rec in self.db.query(query, vals):
          raw = list(rec.values())
          value = '' if raw[0] is None else str(_php(raw[0]))
          # the PHP showed "value - text" when a second column is set (isset: not NULL)
@@ -259,7 +259,8 @@ class EditMixin:
       if hidden:
          return '<input type="hidden" id="{}" value="{}" {} />'.format(col, _attr(def_val), input_info)
       if 'select_query' in info:
-         return self.get_select(info['select_query'], col, def_val, input_info, exclusive)
+         return self.get_select(info['select_query'], col, def_val, input_info, exclusive,
+                                info.get('select_vals'))
       if isinstance(info.get('select_array'), dict):
          return self.get_select_from_array(info['select_array'], col, def_val, input_info, exclusive)
       if 'textarea' in info:
@@ -544,8 +545,25 @@ class EditMixin:
          if callable(self.after_add_fun):
             self.after_add_fun(new_id, self.primary_col, after)
 
+   def cache_before_edit(self, ids):
+      """AjaxTableEditor::cacheEditArray: keep the old values of before_edit_array columns.
+
+      The PHP version never worked (it read an undefined variable), so hooks
+      that compare old and new values, like the dsrqst E->Q requeue, never ran.
+      """
+      self.before_edit = {}
+      cols = [valid_ident(c) for c in (self.before_edit_array or [])]
+      if not cols:
+         return
+      cond, vals = self.key_cond(ids)
+      for row in self.db.query('select {}, {} from {} where {}'.format(
+            self.primary_col, ', '.join(cols), self.sc_and_table, cond), vals):
+         row = {k: _php(v) for k, v in row.items()}
+         self.before_edit[row[self.primary_col]] = {c: row.get(c) for c in cols}
+
    def run_update(self, sets, ids):
       """UPDATE the rows ids with sets; returns the row count."""
+      self.cache_before_edit(ids)
       assigns = ', '.join('{} = {}'.format(col, temp) for col, (temp, _) in sets.items())
       cond, cvals = self.key_cond(ids)
       sqlstr = 'update {} set {} where {}'.format(self.sc_and_table, assigns, cond)

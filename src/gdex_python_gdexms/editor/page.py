@@ -5,8 +5,10 @@ creates self.editor (a TableEditor). The helpers here are the formatting and
 lookup callbacks the PHP pages shared, with all lookups using bound values.
 """
 
+import datetime
 import re
 import time
+from zoneinfo import ZoneInfo
 
 from .engine import TableEditor, html_esc, php_round, php_str, to_number
 
@@ -237,3 +239,72 @@ class Page:
             if dcnt > 0:
                return self.done_percent(dcnt, fcnt)
       return ''
+
+   # ---- validation and column callbacks shared by several pages -------------
+
+   @staticmethod
+   def valid_email(col, val, row):
+      """Common::validEmail (val_fun): empty, or a plausible address.
+
+      The PHP accepted any value matching its "bad address" pattern too (it was
+      or-ed in by mistake); kept as is so existing records still save.
+      """
+      val = val or ''
+      return (not val or bool(re.search(r'(@.*@)|(\.\.)|(@\.)|(\.@)|(^\.)', val))
+              or bool(re.match(r'^.+@(\[?)[a-zA-Z0-9\-.]+\.([a-zA-Z]{2,3}|[0-9]{1,3})(\]?)$', val)))
+
+   @staticmethod
+   def get_date_time(fmt='%Y-%m-%d %H:%M:%S', timezone='America/Denver'):
+      """Common::getDateTime: the current time in Mountain time, formatted with strftime codes."""
+      return datetime.datetime.now(ZoneInfo(timezone)).strftime(fmt)
+
+   def valid_group_index(self, col, val, row):
+      """Common::validGroupIndex (val_fun): a typed group index must exist in the row's dataset."""
+      if php_empty(val) or 'select_query' in self.editor.columns.get(col, {}):
+         return True
+      if not re.match(r'^-?\d+$', str(val)):
+         return False
+      return self.one('select dsid from dsgroup where dsid = %s AND gindex = %s', [row.get('dsid'), val]) is not None
+
+   def select_group_index(self, col, val, row):
+      """Common::selectGroupIndex (column_fun): a group drop-down when the dataset has under 10000 groups."""
+      info = dict(self.editor.columns[col])
+      dsid = row.get('dsid') if row else None
+      count = 0
+      if dsid:
+         count = int(to_number(self.first("select count(*) from dsgroup where dsid = %s AND grptype = 'P'", [dsid])))
+      if 0 < count < 10000:
+         info['select_query'] = "select gindex, title from dsgroup where dsid = %s AND grptype = 'P'"
+         info['select_vals'] = [dsid]
+         info['maxlen'] = info['valtype'] = None
+         return info
+      info.pop('select_query', None)
+      info.pop('select_vals', None)
+      info['maxlen'] = 9
+      info['valtype'] = 'integer'      # the PHP misspelled it 'interger', so its keypress check never ran
+      return info
+
+   @staticmethod
+   def convert_chars(name, default=None):
+      """Common::convert_chars: keep only ASCII letters and digits (ExtChrs.txt never existed)."""
+      name = name or ''
+      if re.match(r'^[a-zA-Z0-9]+$', name):
+         return name
+      new = ''.join(ch for ch in name if re.match(r'[a-zA-Z0-9]', ch))
+      return new or (name if default is None else default)
+
+   def update_dataset_version(self, row_id, pkey, values):
+      """Common::updateDatasetVersion (after hook): bump dataset.version for each changed dataset.
+
+      The PHP stopped after the first dataset of a multi-row edit (it tested an
+      undefined variable); every distinct dataset is bumped here.
+      """
+      ids = row_id if isinstance(row_id, list) else [row_id]
+      if pkey == 'dsid':
+         dsids = ids
+      elif values.get('dsid'):
+         dsids = [values['dsid']]
+      else:
+         return
+      for dsid in dict.fromkeys(dsids):
+         self.db.execute('UPDATE dssdb.dataset SET version = version + 1 WHERE dsid = %s', [dsid])
