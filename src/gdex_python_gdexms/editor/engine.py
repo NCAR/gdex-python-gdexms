@@ -464,7 +464,8 @@ class TableEditor:
          needle = '%' + str(self.search_string).strip() + '%'
          for col, info in self.columns.items():
             if has(info.get('perms'), 'Q'):
-               sets.append(self.column_expr(col) + ' like %s')
+               # cast to text: Postgres has no LIKE on integer columns (the PHP failed here)
+               sets.append('(' + self.column_expr(col) + ')::text like %s')
                vals.append(needle)
       elif self.adv_searches and self.search_type == 'advanced':
          for search in self.adv_searches:
@@ -476,7 +477,7 @@ class TableEditor:
             strs = str(search.get('strs', '')).strip()
             expr = self.column_expr(col)
             if opt in ('like', 'not like'):
-               sets.append(expr + ' ' + opt + ' %s')
+               sets.append('(' + expr + ')::text ' + opt + ' %s')
                vals.append('%' + strs + '%')
             elif opt == 'between':
                m = re.match(r'^\s*(.+)\s+and\s+(.+)\s*$', strs, re.I)

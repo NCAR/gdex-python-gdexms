@@ -87,7 +87,7 @@ def test_quick_search_binds_value():
    sql, vals = db.last('limit %s offset %s')
    assert 'from dssdb.wfile_d627000' in sql
    assert '"' not in sql and "drop" not in sql
-   assert sql.count('like %s') == 3 and ' or\n' in sql            # tindex, data_format, file_format
+   assert sql.count(')::text like %s') == 3 and ' or\n' in sql           # tindex, data_format, file_format
    assert vals[:3] == ["%nc'; drop%"] * 3
    assert "status <> 'D'" in sql
 
@@ -100,7 +100,7 @@ def test_advanced_search_ops_and_rejects_unknown():
    ret, db, session, _ = run('rdadb_org_type', 'advanced_search', info, rows=ORG_ROWS)
    sql, vals = db.last('limit %s offset %s')
    assert '"dssdb.org_type.description" like %s' not in sql
-   assert 'dssdb.org_type.description like %s and\ndssdb.org_type.org_type between %s and %s' in sql
+   assert '(dssdb.org_type.description)::text like %s and\ndssdb.org_type.org_type between %s and %s' in sql
    assert vals == ['%staff%', 'A', 'N', 20, 0]
    assert 'drop' not in sql and 'nosuch' not in sql
    assert len(session['org_type-org_typeadvSearches']) == 4
