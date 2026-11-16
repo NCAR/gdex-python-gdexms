@@ -139,6 +139,15 @@ def test_view_row_formats_values():
    assert "set_view_interval('view_row', '5', 30);" in scripts(ret)
 
 
+def test_view_row_select_query_value():
+   rows = [{'cindex': 5, 'specialist': 'zji'}]
+   lookups = {'from dssdb.dssgrp where': {'logname': 'zji', 'name': 'Zaihua Ji'}}
+   ret, db, _, _ = run('dscheck_check', 'view_row', '5', rows=rows, lookups=lookups)
+   sql, vals = db.last('from dssdb.dssgrp where')
+   assert sql.endswith("where stat_flag = 'C' and logname = %s") and vals == ['zji']
+   assert 'zji - Zaihua Ji' in layer(ret, 'recordLayer')
+
+
 def test_view_row_gone_record():
    ret, _, _, _ = run('rdadb_org_type', 'view_row', 'NOPE', rows=[])
    assert scripts(ret)[0].startswith("toAjaxTableEditor('update_html','View screen was closed")
@@ -163,12 +172,6 @@ def test_webfile_requires_valid_dsid():
    assert layer(ret, 'tableLayer') == '<b>Please enter a Dataset ID to view records.</b>'
    ret, _, session, _ = run('dsarch_webfile', 'set_dsid', 'ds083.2', session={})
    assert session['wfile_dsid'] == '' and any('Invalid dataset id' in s for s in scripts(ret))
-
-
-def test_write_actions_answer_not_yet():
-   ret, db, _, _ = run('rdadb_org_type', 'delete_row', 'NCAR', rows=ORG_ROWS)
-   assert any('not available yet' in s for s in scripts(ret))
-   assert not any(sql.lstrip().lower().startswith(('update', 'delete', 'insert')) for sql, _ in db.log)
 
 
 def test_format_helpers():

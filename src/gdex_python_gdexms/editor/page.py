@@ -41,7 +41,8 @@ class Page:
 
    def make_editor(self, table_name, table_title, primary_col, permissions, columns):
       self.editor = TableEditor(table_name, table_title, primary_col, permissions, columns,
-                                self.session, self.db, page_url=self.page_url, cookies=self.cookies)
+                                self.session, self.db, page_url=self.page_url, cookies=self.cookies,
+                                user=self.specialist, action=self.action)
       return self.editor
 
    def pre_html(self):

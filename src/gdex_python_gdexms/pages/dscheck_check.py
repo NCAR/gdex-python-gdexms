@@ -1,5 +1,8 @@
 """Current checks (dssdb.dscheck); port of dscheck_check.php."""
 
+import datetime
+from zoneinfo import ZoneInfo
+
 from ..editor.page import Page
 
 
@@ -92,4 +95,11 @@ class DscheckCheck(Page):
       ed.set_config('addRowTitle', 'Add A Check Record')
       ed.set_config('viewRowTitle', 'View A Check Record')
       ed.set_config('refreshInterval', 30)     # refresh table/view every 30 seconds
+      ed.set_config('afterAddFun', self.set_date_time)
       ed.set_lock_info('lockhost', 'chktime')
+
+   def set_date_time(self, row_id, pkey, values):
+      """After adding a check, stamp it with the current Mountain date and time (PHP setDateTime)."""
+      now = datetime.datetime.now(ZoneInfo('America/Denver'))
+      self.db.execute('UPDATE dscheck SET date = %s, time = %s WHERE cindex = %s',
+                      [now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S'), row_id])

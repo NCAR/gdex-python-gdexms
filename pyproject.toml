@@ -21,6 +21,7 @@ dependencies = [
   "rda_python_common>=3.0.34",
   "flask>=3.0",
   "gunicorn>=22.0",
+  "tzdata",            # America/Denver for zoneinfo; slim container images have no system zone files
 ]
 
 [tool.pytest.ini_options]

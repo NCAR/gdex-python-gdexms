@@ -52,4 +52,7 @@ LANG = {
    'ttlCheckBox': 'Display',
    'optionalDefault': 'Optional Default Value',
    'exclusiveSelect': 'Exclude Selections',
+   'errVal': 'Please correct the fields in red',
+   'edit1Row': 'You can only edit 1 row at a time.',
+   'errLockLost': 'The record lock was lost (the edit screen was closed or timed out). Open the record again to edit it.',
 }

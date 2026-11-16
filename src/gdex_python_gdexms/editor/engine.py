@@ -11,8 +11,8 @@ Differences from the PHP, on purpose:
   names, sort columns and search operators are checked against the page config.
 - Join aliases are deterministic (<table>_j<n>) instead of random.
 
-Phase 1 covers the read-only actions. Writes, record locks and column
-show/hide/order changes come in phase 2 and answer with a warning until then.
+The write actions, record locks and column show/hide/order screens are in
+edit.py (EditMixin), which TableEditor mixes in.
 
 This file is derived from the PostgreSQL/MySQL Ajax Table Editor,
 Copyright (c) 2008 Chris Kitchen <info@mysqlajaxtableeditor.com>, modified for
@@ -28,6 +28,7 @@ import re
 import secrets
 
 from .db import valid_ident
+from .edit import EditMixin
 from .lang import LANG
 
 SEARCH_OPTS = {
@@ -36,12 +37,11 @@ SEARCH_OPTS = {
    '>=': LANG['optGreatEq'], '<=': LANG['optLessEq'], 'between': LANG['optBetween'],
 }
 
-# actions that change data or column preferences; ported in phase 2
-PHASE2_ACTIONS = {
+# actions that change table data; refused while a dataset page has no dataset chosen
+DATA_ACTIONS = {
    'edit_row', 'update_row', 'add_row', 'insert_row', 'copy_row', 'delete_row',
    'edit_mult_rows', 'update_mult_rows', 'copy_mult_rows', 'delete_mult_rows',
-   'show_column', 'hide_column', 'show_hide_columns', 'order_columns_screen',
-   'update_column_order', 'reset_column_order', 'user_icon_clicked', 'user_button_clicked',
+   'user_icon_clicked', 'user_button_clicked',
 }
 
 
@@ -152,11 +152,11 @@ class EditorError(Exception):
    """A condition the PHP reported through errorFun (it died with a message)."""
 
 
-class TableEditor:
+class TableEditor(EditMixin):
    """One table page's editor state for a single request."""
 
    def __init__(self, table_name, table_title, primary_col, permissions, columns,
-                session, db, sc_name='dssdb', page_url='', cookies=None):
+                session, db, sc_name='dssdb', page_url='', cookies=None, user=None, action=''):
       self.table_name = valid_ident(table_name)
       self.table_title = table_title
       self.primary_col = valid_ident(primary_col)
@@ -167,6 +167,8 @@ class TableEditor:
       self.sc_name = sc_name
       self.page_url = page_url
       self.cookies = cookies or {}
+      self.user = user                # signed-in specialist, for the change log
+      self.request_action = action    # known before main(), for set_lock_info()
       self.set_cookies = {}           # cookies the response must set
       self.ret = []
       self.warnings = []
@@ -233,6 +235,21 @@ class TableEditor:
       self.select_clause = self.join_clause = self.where_clause = ''
       self.where_vals = []
       self.num_results = 0
+      # editing (edit.py)
+      self.val_error = False
+      self.req_marker = '*'
+      self.edit_table_info = 'class="mateTable"'
+      self.add_table_info = 'class="mateTable"'
+      self.show_hide_table_info = 'class="mateTable"'
+      self.val_error_styles = 'color: #f90d0d;'
+      self.no_val_error_styles = 'color: #333;'
+      self.show_hide_title = LANG['ttlShowHide']
+      self.order_col_title = LANG['ttlOrderCols']
+      self.allow_edit_mult = True
+      self.default_js_cal_format = '%d %B %Y'
+      self.defined_default = None
+      self.after_add_fun = self.after_edit_fun = self.after_delete_fun = self.after_copy_fun = None
+      self.check_delete_fun = self.add_screen_fun = self.edit_screen_fun = None
 
    CONFIG_NAMES = {
       'tableInfo': 'table_info', 'orderByColumn': 'order_by_column', 'addRowTitle': 'add_row_title',
@@ -240,6 +257,10 @@ class TableEditor:
       'editMultTitle': 'edit_mult_title', 'sqlFilters': 'sql_filters',
       'refreshInterval': 'refresh_interval', 'iconTitle': 'icon_title',
       'extraOrderByInfo': 'extra_order_by_info', 'displayNum': 'display_num',
+      'afterAddFun': 'after_add_fun', 'afterEditFun': 'after_edit_fun', 'afterDeleteFun': 'after_delete_fun',
+      'afterCopyFun': 'after_copy_fun', 'checkDeleteFun': 'check_delete_fun', 'addScreenFun': 'add_screen_fun',
+      'editScreenFun': 'edit_screen_fun', 'allowEditMult': 'allow_edit_mult', 'showHideTitle': 'show_hide_title',
+      'orderColTitle': 'order_col_title', 'editTableInfo': 'edit_table_info', 'addTableInfo': 'add_table_info',
    }
 
    def set_config(self, var, val):
@@ -247,10 +268,6 @@ class TableEditor:
       if self.var_prefix + var in self.session:
          return
       setattr(self, self.CONFIG_NAMES.get(var, var), val)
-
-   def set_lock_info(self, host_field, time_field):
-      """Record which columns hold the record lock (locking itself is phase 2)."""
-      self.lock_info_fields = (valid_ident(host_field), valid_ident(time_field))
 
    # ---- request entry -------------------------------------------------------
 
@@ -333,10 +350,10 @@ class TableEditor:
          self.update_html()
       elif action == 'show_summary':
          self.show_summary()
-      elif action == 'release_lock':
-         pass     # no record is ever locked until editing is ported (phase 2)
-      elif action in PHASE2_ACTIONS:
-         self.warnings.append("'{}' is not available yet in gdexms (read-only phase)".format(action))
+      elif action in DATA_ACTIONS and self.require_dsid:
+         self.warnings.append('Please enter a Dataset ID first.')
+      elif self.handle_edit_flow(action, info):
+         pass
       elif action in self.user_actions:
          self.user_actions[action](info)
       else:
@@ -356,6 +373,8 @@ class TableEditor:
    # ---- table screen --------------------------------------------------------
 
    def update_html(self, param=''):
+      if self.lock_info and self.lock_info.get('id') is not None:
+         self.clear_lock_info()
       self.display_table(param)
       self.display_bottom_info()
       self.ret.append({'layer_id': 'recordLayer', 'where': 'innerHTML', 'value': ''})
@@ -770,6 +789,8 @@ class TableEditor:
             elif 'select_array' in info:
                if value and value in info['select_array']:
                   value = value + ' - ' + info['select_array'][value]
+            elif 'select_query' in info:
+               value = self.select_query_view_value(col, value, info)
             elif 'data_precision' in info:
                value = format_data_size(value, 1)
             value = str(value) if value is not None and str(value).strip() else '&nbsp;'
@@ -797,6 +818,19 @@ class TableEditor:
       self.ret.append({'where': 'javascript', 'value': 'showRecordPane();'})
       self.ret.append({'where': 'javascript', 'value': "set_view_interval('view_row', '{}', {});".format(
          js_str(row_id), int(self.refresh_interval or 0))})
+
+   def select_query_view_value(self, col, val, info):
+      """AjaxTableEditor::getSelectQueryViewValue: append the select query's text for val."""
+      if not val or val == '0':
+         return val
+      field = valid_ident(info.get('query_column') or col)
+      query = sql_lit(re.split(r' order by ', info['select_query'], maxsplit=1, flags=re.I)[0])
+      query += (' and ' if re.search(r' where ', query, re.I) else ' where ') + field + ' = %s'
+      row = self.db.query_one(query, [val])
+      vals = list(row.values()) if row else []
+      if len(vals) > 1 and vals[1] not in (None, ''):
+         val = '{} - {}'.format(val, php_str(vals[1]))
+      return val
 
    def show_summary(self):
       self.unset_hidden_columns()
