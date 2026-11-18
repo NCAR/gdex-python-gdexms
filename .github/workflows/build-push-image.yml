@@ -1,0 +1,69 @@
+# Build the gdexms container image and push it to the CIRRUS registry (hub.k8s.ucar.edu).
+# Based on NCAR/cirrus-examples github-workflows/build-push-image.yaml.
+#
+# Runs on the CIRRUS self-hosted runner, so it must NEVER run on pull_request or
+# pull_request_target events: only on pushes to main (protected, PR-only) or a manual
+# run from main. Third-party actions are pinned to commit hashes.
+#
+# Repository settings needed:
+#   variable CIRRUS_RUNNER  - runs-on label of the CIRRUS self-hosted runner
+#   secret   hub_user       - CIRRUS registry robot account for the project
+#   secret   hub_password   - its password
+# Deploying a new build = set the image tag in helm/gdexms/values.yaml to the short SHA.
+
+name: Build and push image
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-push-image
+  cancel-in-progress: false
+
+env:
+  IMAGE: hub.k8s.ucar.edu/gdex/gdexms   # TODO: confirm the registry project name with CIRRUS
+
+jobs:
+  build:
+    if: github.repository == 'NCAR/gdex-python-gdexms' && github.ref == 'refs/heads/main'
+    runs-on: ${{ vars.CIRRUS_RUNNER }}
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      with:
+        persist-credentials: false
+
+    - name: Get short SHA
+      run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+    # CIRRUS builds through its remote buildkit service
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3.12.0
+      with:
+        platforms: linux/amd64
+        driver: remote
+        endpoint: tcp://buildkitd.arc-systems.svc:1234
+
+    - name: Log in to the CIRRUS registry
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3.7.0
+      with:
+        registry: hub.k8s.ucar.edu
+        username: ${{ secrets.hub_user }}
+        password: ${{ secrets.hub_password }}
+
+    - name: Build and push
+      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6.19.2
+      with:
+        context: .
+        file: Dockerfile
+        platforms: linux/amd64
+        push: true
+        tags: ${{ env.IMAGE }}:${{ env.SHORT_SHA }}
+        cache-from: type=registry,ref=${{ env.IMAGE }}:cache
+        cache-to: type=registry,ref=${{ env.IMAGE }}:cache,image-manifest=true,mode=max
