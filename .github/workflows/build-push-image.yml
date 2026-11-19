@@ -30,7 +30,8 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'NCAR/gdex-python-gdexms' && github.ref == 'refs/heads/main'
+    # Skipped (not failed) until the CIRRUS_RUNNER repo variable is set
+    if: github.repository == 'NCAR/gdex-python-gdexms' && github.ref == 'refs/heads/main' && vars.CIRRUS_RUNNER != ''
     runs-on: ${{ vars.CIRRUS_RUNNER }}
 
     steps:
