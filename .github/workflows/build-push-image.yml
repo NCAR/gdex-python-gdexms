@@ -1,14 +1,14 @@
 # Build the gdexms container image and push it to the CIRRUS registry (hub.k8s.ucar.edu).
-# Based on NCAR/cirrus-examples github-workflows/build-push-image.yaml.
+# Based on NCAR/cirrus-examples github-workflows/build-push-image.yaml, but runs on a
+# GitHub-hosted runner (ubuntu-latest) with the default buildx builder, as CIRRUS advised
+# for small builds; no CIRRUS runner or remote buildkit is needed.
 #
-# Runs on the CIRRUS self-hosted runner, so it must NEVER run on pull_request or
-# pull_request_target events: only on pushes to main (protected, PR-only) or a manual
-# run from main. Third-party actions are pinned to commit hashes.
+# Runs only on pushes to main (protected, PR-only) or a manual run from main, never on
+# pull_request / pull_request_target. Third-party actions are pinned to commit hashes.
 #
-# Repository settings needed:
-#   variable CIRRUS_RUNNER  - runs-on label of the CIRRUS self-hosted runner
-#   secret   hub_user       - CIRRUS registry robot account for the project
-#   secret   hub_password   - its password
+# Repository secrets needed (CIRRUS registry robot account for the gdex project):
+#   hub_user, hub_password
+# Until both are set, the run succeeds without building and shows a notice.
 # Deploying a new build = set the image tag in helm/gdexms/values.yaml to the short SHA.
 
 name: Build and push image
@@ -26,32 +26,42 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE: hub.k8s.ucar.edu/gdex/gdexms   # TODO: confirm the registry project name with CIRRUS
+  IMAGE: hub.k8s.ucar.edu/gdex/gdexms
 
 jobs:
   build:
-    # Skipped (not failed) until the CIRRUS_RUNNER repo variable is set
-    if: github.repository == 'NCAR/gdex-python-gdexms' && github.ref == 'refs/heads/main' && vars.CIRRUS_RUNNER != ''
-    runs-on: ${{ vars.CIRRUS_RUNNER }}
+    if: github.repository == 'NCAR/gdex-python-gdexms' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
 
     steps:
+    - name: Check registry secrets
+      id: check
+      env:
+        HUB_USER: ${{ secrets.hub_user }}
+        HUB_PASSWORD: ${{ secrets.hub_password }}
+      run: |
+        if [ -n "$HUB_USER" ] && [ -n "$HUB_PASSWORD" ]; then
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::notice::hub_user/hub_password secrets are not set; skipping the image build."
+        fi
+
     - name: Check out code
+      if: steps.check.outputs.ready == 'true'
       uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
       with:
         persist-credentials: false
 
     - name: Get short SHA
+      if: steps.check.outputs.ready == 'true'
       run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
-    # CIRRUS builds through its remote buildkit service
     - name: Set up Docker Buildx
+      if: steps.check.outputs.ready == 'true'
       uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3.12.0
-      with:
-        platforms: linux/amd64
-        driver: remote
-        endpoint: tcp://buildkitd.arc-systems.svc:1234
 
     - name: Log in to the CIRRUS registry
+      if: steps.check.outputs.ready == 'true'
       uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3.7.0
       with:
         registry: hub.k8s.ucar.edu
@@ -59,6 +69,7 @@ jobs:
         password: ${{ secrets.hub_password }}
 
     - name: Build and push
+      if: steps.check.outputs.ready == 'true'
       uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6.19.2
       with:
         context: .
