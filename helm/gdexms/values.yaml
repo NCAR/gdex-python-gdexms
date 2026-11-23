@@ -21,7 +21,9 @@ webapp:
     limits:
       memory: 512M
       cpu: 1
-  env: {}                                 # Plain (non-secret) env vars, e.g. DSSDBHOST: <db host>
+  # Plain (non-secret) env vars. None needed for the database: rda_python_common already
+  # defaults to host rda-db.ucar.edu and database rdadb (override with DSSDBHOST / DBNAME).
+  env: {}
   secretStore: user-ro                    # SecretStore set up in our namespace by CIRRUS admins (confirm name)
   # Each entry maps one OpenBao path/property to an env var in the container.
   # TODO: confirm the OpenBao paths with CIRRUS (shared path for the GDEX team).
@@ -29,7 +31,7 @@ webapp:
     - envVar: FLASK_SECRET_KEY            # Signs session cookies; same value on all replicas
       path: gdex/gdexms
       property: flask_secret_key
-    - envVar: OIDC_CLIENT_ID              # Entra ID client from the CIRRUS team (Kevin/Varsha)
+    - envVar: OIDC_CLIENT_ID              # Entra ID client registered by UCAR IT
       path: gdex/gdexms
       property: oidc_client_id
     - envVar: OIDC_CLIENT_SECRET
