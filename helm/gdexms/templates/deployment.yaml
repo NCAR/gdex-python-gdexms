@@ -8,6 +8,13 @@ metadata:
     group: {{ .Values.webapp.group }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  # Remove the old pod before starting the new one: the rda namespace's pod quota
+  # may have no free slot for an extra pod during a rollout (brief downtime is fine)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: {{ .Values.webapp.name }}

@@ -1,4 +1,6 @@
-replicaCount: 2                           # Pods share state only through the signed session cookie
+# One pod is plenty for ~50 staff, and the shared rda namespace has a 40-pod quota
+# (pod-limit). Pods share state only through the signed session cookie.
+replicaCount: 1
 
 webapp:
   name: gdexms                            # Name for k8s objects
