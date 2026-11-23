@@ -21,7 +21,7 @@
    </script>
 </head>
 <body onload="resizeContainer()" onresize="resizeContainer()">
-   <div id="user">{{ user }}</div>
+   <div id="user">{{ name or user }}{% if signed_in %} &middot; <a href="logout" target="_top">Sign out</a>{% endif %}</div>
    <h1 align="Center">RDAMS POSTGRESQL CONFIGURATION EDITOR</h1>
    <div id="container">
       <div id="left">

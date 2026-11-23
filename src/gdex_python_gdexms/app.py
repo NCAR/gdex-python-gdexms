@@ -8,11 +8,10 @@ Settings come from the environment, which on CIRRUS is filled from OpenBao by
 the ExternalSecret in the Helm chart (helm/gdexms):
 
    FLASK_SECRET_KEY     signs the session cookie; must be the same on all replicas
-   OIDC_CLIENT_ID       Entra ID client ID (login, not wired up yet)
-   OIDC_CLIENT_SECRET   Entra ID client secret (login, not wired up yet)
+   OIDC_*               Entra ID sign-in (see auth.py); sign-in is on when OIDC_CLIENT_ID is set
    PGDB01_DSSDBPASS     dssdb password, read by rda_python_common itself
-   GDEXMS_DEV_USER      local development only: act as this UCAR login, since
-                        the Entra ID sign-in is not wired up yet
+   GDEXMS_DEV_USER      local development only, and only while OIDC_CLIENT_ID is unset:
+                        act as this UCAR login without signing in
 """
 
 import os
@@ -20,8 +19,10 @@ import secrets
 from pathlib import Path
 
 from flask import Flask, Response, abort, jsonify, render_template, request, send_from_directory, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import __version__
+from .auth import init_auth, oidc_settings
 from .editor.db import EditorDBError, get_db
 from .editor.engine import EditorError, decode_request
 from .pages import PAGES
@@ -59,27 +60,18 @@ def create_app(test_config=None):
    dev_user = os.environ.get('GDEXMS_DEV_USER')
    app.config.from_mapping(
       SECRET_KEY=os.environ.get('FLASK_SECRET_KEY') or (secrets.token_hex(32) if dev_user else None),
-      OIDC_CLIENT_ID=os.environ.get('OIDC_CLIENT_ID'),
-      OIDC_CLIENT_SECRET=os.environ.get('OIDC_CLIENT_SECRET'),
       DEV_USER=dev_user,
       SESSION_COOKIE_SAMESITE='Lax',
       SESSION_COOKIE_SECURE=not dev_user,
       GET_DB=get_db,
+      **oidc_settings(),
    )
    if test_config:
       app.config.update(test_config)
-
-   def current_user():
-      """The signed-in UCAR login; the dev user stands in until Entra ID sign-in is added."""
-      return session.get('user') or app.config.get('DEV_USER')
-
-   @app.before_request
-   def require_user():
-      if request.endpoint in ('healthz', 'static_files'):
-         return None
-      if not current_user():
-         return Response('Sign-in is not set up yet for gdexms.', status=401, mimetype='text/plain')
-      return None
+   # behind the CIRRUS ingress: trust its X-Forwarded-Proto/Host so the sign-in
+   # callback URL is https://<fqdn>/auth/callback
+   app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+   current_user = init_auth(app)
 
    @app.get("/healthz")
    def healthz():
@@ -93,7 +85,8 @@ def create_app(test_config=None):
    @app.get('/')
    def index():
       menu = [(group, [(text, page, page in PAGES) for text, page in items]) for group, items in MENU]
-      return render_template('index.html', menu=menu, user=current_user())
+      return render_template('index.html', menu=menu, user=current_user(), name=session.get('name'),
+                             signed_in='user' in session)
 
    @app.route('/<page>.php', methods=['GET', 'POST'])
    def table_page(page):

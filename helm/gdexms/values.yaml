@@ -25,6 +25,10 @@ webapp:
   # defaults to host rda-db.ucar.edu and database rdadb (override with DSSDBHOST / DBNAME).
   env:
     GDEXMS_LOGPATH: "-"                  # app log to stdout/stderr -> Loki / kubectl logs
+    # Entra ID sign-in (see src/gdex_python_gdexms/auth.py); add with the OIDC secrets below:
+    # OIDC_TENANT_ID: "<UCAR Entra directory (tenant) ID>"
+    # OIDC_USERNAME_CLAIM: preferred_username   # claim holding <logname>@ucar.edu
+    # OIDC_ALLOWED_GROUP: "<group object ID or app role>"   # optional; omit to rely on dssgrp alone
   secretStore: rda-ro                     # CIRRUS SecretStore for everything under kv/gdex (per Nick)
   # Each entry maps one OpenBao path/property to an env var in the container.
   # Paths are under kv/gdex. Existing secrets keep their paths (kv/gdex/pgdb01); the app's
