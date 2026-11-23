@@ -68,6 +68,31 @@ jobs:
         username: ${{ secrets.hub_user }}
         password: ${{ secrets.hub_password }}
 
+    # Start the image and wait for /healthz before pushing, so an image whose
+    # workers cannot boot (e.g. a missing library) never reaches the registry
+    - name: Build image for the smoke test
+      if: steps.check.outputs.ready == 'true'
+      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6.19.2
+      with:
+        context: .
+        file: Dockerfile
+        platforms: linux/amd64
+        load: true
+        tags: gdexms:smoke
+        cache-from: type=registry,ref=${{ env.IMAGE }}:cache
+
+    - name: Smoke test (container starts and answers /healthz)
+      if: steps.check.outputs.ready == 'true'
+      run: |
+        docker run -d --name gdexms -p 8080:8080 gdexms:smoke
+        for i in $(seq 1 30); do
+          if curl -fsS http://localhost:8080/healthz; then echo; docker rm -f gdexms; exit 0; fi
+          sleep 2
+        done
+        echo "::error::gdexms container did not answer /healthz"
+        docker logs gdexms
+        exit 1
+
     - name: Build and push
       if: steps.check.outputs.ready == 'true'
       uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6.19.2
