@@ -99,8 +99,9 @@ def test_identifier_checks():
 
 def test_log_to_console(monkeypatch, tmp_path, capsys):
    monkeypatch.setenv('GDEXMS_LOGPATH', '-')
+   monkeypatch.setattr(dbmod.tempfile, 'tempdir', str(tmp_path))   # where a stray log file would go
    d = EditorDB()
-   assert d.log_to_console
+   assert d.log_to_console and d.PGLOG['LOGPATH'] == str(tmp_path)
    d.pglog('hello from gdexms', d.LOGWRN)
    d.pglog('bad thing', d.LOGERR)
    out = capsys.readouterr()
