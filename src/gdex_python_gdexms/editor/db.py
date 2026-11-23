@@ -18,6 +18,7 @@ is not thread-safe, so gunicorn runs sync workers with no threads.
 
 import os
 import re
+import sys
 import tempfile
 from contextlib import contextmanager
 
@@ -52,7 +53,10 @@ class EditorDB(PgDBI):
       super().__init__()
       self.PGLOG['BCKGRND'] = 1     # nothing echoed to the console
       self.PGLOG['DBRETRY'] = 2     # fail fast enough for gunicorn's request timeout
-      self.PGLOG['LOGPATH'] = os.environ.get('GDEXMS_LOGPATH', tempfile.gettempdir())
+      # GDEXMS_LOGPATH='-' sends the log to stdout/stderr (on CIRRUS, collected by Loki)
+      logpath = os.environ.get('GDEXMS_LOGPATH', tempfile.gettempdir())
+      self.log_to_console = (logpath == '-')
+      self.PGLOG['LOGPATH'] = tempfile.gettempdir() if self.log_to_console else logpath
       self.PGLOG['LOGFILE'] = os.environ.get('GDEXMS_LOGFILE', 'rda_config.log')
       self.PGLOG['ERRFILE'] = ''    # derived from LOGFILE: rda_config.err
       self.lasterr = None
@@ -64,6 +68,14 @@ class EditorDB(PgDBI):
       if logact is not None and logact & (self.ERRLOG | self.EXITLG):
          self.lasterr = (msg or 'Database error').strip()
       return super().pglog(msg, logact)
+
+   def write_message(self, msg, file, logact):
+      """Write to the log file, or to stdout/stderr when GDEXMS_LOGPATH is '-'."""
+      if self.log_to_console: file = None
+      ret = super().write_message(msg, file, logact)
+      if self.log_to_console:
+         sys.stderr.flush() if logact & (self.ERRLOG | self.EXITLG) else sys.stdout.flush()
+      return ret
 
    def pgexit(self, stat=0):
       """Never exit the worker: drop the (possibly broken) connection and raise."""
