@@ -21,6 +21,8 @@ dependencies = [
   "rda_python_common>=3.0.34",
   "flask>=3.0",
   "gunicorn>=22.0",
+  "authlib>=1.3",       # Entra ID (OIDC) sign-in
+  "requests",          # Authlib's Flask client uses it for discovery and the token exchange
   "tzdata",            # America/Denver for zoneinfo; slim container images have no system zone files
 ]
 
