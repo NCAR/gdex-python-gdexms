@@ -23,20 +23,24 @@ webapp:
       cpu: 1
   # Plain (non-secret) env vars. None needed for the database: rda_python_common already
   # defaults to host rda-db.ucar.edu and database rdadb (override with DSSDBHOST / DBNAME).
-  env: {}
-  secretStore: user-ro                    # SecretStore set up in our namespace by CIRRUS admins (confirm name)
+  env:
+    GDEXMS_LOGPATH: "-"                  # app log to stdout/stderr -> Loki / kubectl logs
+  secretStore: rda-ro                     # CIRRUS SecretStore for everything under kv/gdex (per Nick)
   # Each entry maps one OpenBao path/property to an env var in the container.
-  # TODO: confirm the OpenBao paths with CIRRUS (shared path for the GDEX team).
+  # Paths are under kv/gdex. Existing secrets keep their paths (kv/gdex/pgdb01); the app's
+  # own secrets go in kv/gdex/gdexms, which GDEX writes itself. Every property listed here
+  # must exist in OpenBao, or the ExternalSecret fails to sync and the pods cannot start.
   secrets:
     - envVar: FLASK_SECRET_KEY            # Signs session cookies; same value on all replicas
       path: gdex/gdexms
       property: flask_secret_key
-    - envVar: OIDC_CLIENT_ID              # Entra ID client registered by UCAR IT
-      path: gdex/gdexms
-      property: oidc_client_id
-    - envVar: OIDC_CLIENT_SECRET
-      path: gdex/gdexms
-      property: oidc_client_secret
+    # Add once UCAR IT registers the Entra ID client and the values are in kv/gdex/gdexms:
+    # - envVar: OIDC_CLIENT_ID
+    #   path: gdex/gdexms
+    #   property: oidc_client_id
+    # - envVar: OIDC_CLIENT_SECRET
+    #   path: gdex/gdexms
+    #   property: oidc_client_secret
     - envVar: PGDB01_DSSDBPASS            # dssdb password; rda_python_common reads <NODE>_<KEY>
       path: gdex/pgdb01
       property: dssdbpass

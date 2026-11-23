@@ -95,3 +95,24 @@ def test_identifier_checks():
    for bad in ('wfile; drop table x', 'Name', ''):
       with pytest.raises(ValueError): valid_ident(bad)
    with pytest.raises(ValueError): valid_dsid('ds627.0')
+
+
+def test_log_to_console(monkeypatch, tmp_path, capsys):
+   monkeypatch.setenv('GDEXMS_LOGPATH', '-')
+   d = EditorDB()
+   assert d.log_to_console
+   d.pglog('hello from gdexms', d.LOGWRN)
+   d.pglog('bad thing', d.LOGERR)
+   out = capsys.readouterr()
+   assert 'hello from gdexms' in out.out
+   assert 'bad thing' in out.err
+   assert not list(tmp_path.iterdir())
+
+
+def test_log_to_file(monkeypatch, tmp_path, capsys):
+   monkeypatch.setenv('GDEXMS_LOGPATH', str(tmp_path))
+   d = EditorDB()
+   assert not d.log_to_console
+   d.pglog('to the file', d.LOGWRN)
+   assert 'to the file' in (tmp_path / 'rda_config.log').read_text()
+   assert 'to the file' not in capsys.readouterr().out
