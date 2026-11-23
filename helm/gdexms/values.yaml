@@ -13,7 +13,7 @@ webapp:
   ingress:
     visibility: internal                  # internal = UCAR network/VPN only
   container:
-    image: hub.k8s.ucar.edu/gdex/gdexms:0.1.0   # TODO: set the tag to a short SHA pushed by the build workflow
+    image: hub.k8s.ucar.edu/gdex/gdexms:7ea65cb   # short SHA of an image pushed by the build workflow
     port: 8080                            # gunicorn port (see Dockerfile)
     requests:
       memory: 256M
