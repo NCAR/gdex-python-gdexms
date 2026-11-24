@@ -22,6 +22,9 @@ spec:
     metadata:
       labels:
         app: {{ .Values.webapp.name }}
+      annotations:
+        # bump webapp.secretsVersion to restart the pod with re-read secrets
+        gdexms/secrets-version: {{ .Values.webapp.secretsVersion | quote }}
     spec:
       containers:
       - name: {{ .Values.webapp.name }}

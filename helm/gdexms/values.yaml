@@ -31,6 +31,9 @@ webapp:
     OIDC_TENANT_ID: "a85e7773-09e6-4cce-aa58-664ddb1aca42"   # UCAR Entra directory (tenant) ID
     OIDC_USERNAME_CLAIM: preferred_username                  # claim holding <logname>@ucar.edu
     OIDC_ALLOWED_GROUP: "5bbe939c-b1b3-4819-b66f-0ed98c06623d"   # gdexms-users group object ID (groups claim in ID token)
+  # After changing a value in OpenBao, bump this to re-read the secrets and restart the pod
+  # (no Argo CD actions needed; the ExternalSecret otherwise re-reads OpenBao hourly).
+  secretsVersion: 2
   secretStore: rda-ro                     # CIRRUS SecretStore for everything under kv/gdex (per Nick)
   # Each entry maps one OpenBao path/property to an env var in the container.
   # Paths are under kv/gdex. Existing secrets keep their paths (kv/gdex/pgdb01); the app's
