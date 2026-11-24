@@ -4,13 +4,13 @@ from ..editor.page import Page
 
 
 class MSSUser(Page):
-   title = 'RDA NCAR User'
+   title = 'GDEX NCAR User'
 
    def init_editor(self):
       email = self.valid_email
       columns = {
          'uid': {'display_text': 'User<br>Id', 'perms': 'EOSTVX',
-                 'description': 'RDA user ID with NCAR computer account', 'maxlen': 9, 'valtype': 'integer'},
+                 'description': 'GDEX user ID with NCAR computer account', 'maxlen': 9, 'valtype': 'integer'},
          'upid': {'display_text': 'UCAR<br>DB ID', 'perms': 'EHOSTVX',
                   'description': 'Unique id in UCAR people database if set', 'maxlen': 9, 'valtype': 'integer'},
          'userno': {'display_text': 'System<br>ID', 'perms': 'EHOSTVX',
@@ -26,7 +26,7 @@ class MSSUser(Page):
          'midinit': {'display_text': 'MI', 'perms': 'EHOSTVX',
                      'description': 'User middle name initital', 'maxlen': 1},
          'stat_flag': {'display_text': 'Status', 'perms': 'EHMOSTVX',
-                       'description': 'RDA NCAR User status', 'maxlen': 1, 'req': True,
+                       'description': 'GDEX NCAR User status', 'maxlen': 1, 'req': True,
                        'select_array': {'A': 'Active', 'C': 'Closed', 'I': 'Inactive', 'M': 'Missing Info'}},
          'division': {'display_text': 'Division', 'perms': 'EHMOSTVX',
                       'description': 'NCAR Division/Lab name', 'maxlen': 5},
@@ -59,10 +59,10 @@ class MSSUser(Page):
                         'description': 'account close date if set', 'input_info': 'style="width: 200px"',
                         'calendar': {'format': '%Y-%m-%d', 'reset': True}},
       }
-      ed = self.make_editor('user', 'RDA NCAR User Information', 'uid', 'EHMOSUVX', columns)
+      ed = self.make_editor('user', 'GDEX NCAR User Information', 'uid', 'EHMOSUVX', columns)
       ed.set_config('tableInfo', 'cellpadding="2" width="1600" class="mateTable"')
       ed.set_config('orderByColumn', 'uid')
-      ed.set_config('addRowTitle', 'Add A RDA NCAR User')
-      ed.set_config('editRowTitle', 'Edit A RDA NCAR User')
-      ed.set_config('viewRowTitle', 'View A RDA NCAR User')
-      ed.set_config('editMultTitle', 'Set Common Values for Multiple RDA NCAR Users')
+      ed.set_config('addRowTitle', 'Add A GDEX NCAR User')
+      ed.set_config('editRowTitle', 'Edit A GDEX NCAR User')
+      ed.set_config('viewRowTitle', 'View A GDEX NCAR User')
+      ed.set_config('editMultTitle', 'Set Common Values for Multiple GDEX NCAR Users')

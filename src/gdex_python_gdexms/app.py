@@ -30,8 +30,8 @@ from .pages import PAGES
 STATIC = Path(__file__).parent / 'static'
 
 MENU = [
-   ('RDADB', [('Specialist', 'rdadb_specialist'), ('Organization Types', 'rdadb_org_type'),
-              ('RDA NCAR User', 'rdadb_ncar_user'), ('RDA Public User', 'rdadb_public_user')]),
+   ('GDEXDB', [('Specialist', 'rdadb_specialist'), ('Organization Types', 'rdadb_org_type'),
+              ('GDEX NCAR User', 'rdadb_ncar_user'), ('GDEX Public User', 'rdadb_public_user')]),
    ('DSARCH', [('Dataset Information', 'dsarch_dataset'), ('Group Information', 'dsarch_group'),
                ('Saved Files', 'dsarch_savedfile'), ('Backup Files', 'dsarch_backupfile'),
                ('Web Files', 'dsarch_webfile'), ('Help Files', 'dsarch_helpfile'),

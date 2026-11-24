@@ -36,8 +36,8 @@ ROWS = {
    DsarchGroup: [{'gidx': '3', 'gindex': '1', 'dsid': 'd627000', 'title': 'Group one', 'grptype': 'P'}],
    DsarchVersion: [{'vindex': '5', 'dsid': 'd627000', 'status': 'A', 'doi': '10.5065/X'}],
 }
-TITLES = {DssSpecialist: 'DSS Specialist Information', MSSUser: 'RDA NCAR User Information',
-          WebUser: 'RDA Public User Information', Dataset: 'Dataset Information',
+TITLES = {DssSpecialist: 'DSS Specialist Information', MSSUser: 'GDEX NCAR User Information',
+          WebUser: 'GDEX Public User Information', Dataset: 'Dataset Information',
           DsarchGroup: 'Dataset Group Information', DsarchVersion: 'DOI Version Control Information'}
 TABLES = {DssSpecialist: 'dssgrp', MSSUser: 'user', WebUser: 'wuser', Dataset: 'dataset',
           DsarchGroup: 'dsgroup', DsarchVersion: 'dsvrsn'}

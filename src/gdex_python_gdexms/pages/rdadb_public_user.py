@@ -4,14 +4,14 @@ from ..editor.page import Page
 
 
 class WebUser(Page):
-   title = 'RDA Public User'
+   title = 'GDEX Public User'
 
    def init_editor(self):
       email = self.valid_email
       columns = {
          # the PHP misspelled the valtype 'interger', so its keypress check never ran
          'wuid': {'display_text': 'User Id', 'perms': 'EOSTVX',
-                  'description': 'RDA public user id, auto generated', 'valtype': 'integer'},
+                  'description': 'GDEX public user id, auto generated', 'valtype': 'integer'},
          'ruid': {'display_text': 'Registered<br>User ID', 'perms': 'HOSTVX',
                   'description': 'User id registered online at rda.ucar.edu if > 0', 'maxlen': 9,
                   'valtype': 'integer'},
@@ -59,10 +59,10 @@ class WebUser(Page):
                         'description': 'account close date if set', 'input_info': 'style="width: 200px"',
                         'calendar': {'format': '%Y-%m-%d', 'reset': True}},
       }
-      ed = self.make_editor('wuser', 'RDA Public User Information', 'wuid', 'ACDEHMOSUVX', columns)
+      ed = self.make_editor('wuser', 'GDEX Public User Information', 'wuid', 'ACDEHMOSUVX', columns)
       ed.set_config('tableInfo', 'cellpadding="1" width="1600" class="mateTable"')
       ed.set_config('orderByColumn', 'wuid')
-      ed.set_config('addRowTitle', 'Add A RDA Public User')
-      ed.set_config('editRowTitle', 'Edit A RDA Public User')
-      ed.set_config('viewRowTitle', 'View A RDA Public User')
-      ed.set_config('editMultTitle', 'Set Comman Values for Multiple RDA Public Users')
+      ed.set_config('addRowTitle', 'Add A GDEX Public User')
+      ed.set_config('editRowTitle', 'Edit A GDEX Public User')
+      ed.set_config('viewRowTitle', 'View A GDEX Public User')
+      ed.set_config('editMultTitle', 'Set Common Values for Multiple GDEX Public Users')
