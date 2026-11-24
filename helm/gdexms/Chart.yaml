@@ -3,4 +3,4 @@ name: gdexms
 description: GDEX specialist web application (gdexms) on CIRRUS, with secrets from OpenBao
 type: application
 version: 0.1.0          # Chart version; increment when templates change
-appVersion: "1.0.0"     # gdexms version; keep in step with the image tag
+appVersion: "1.0.1"     # gdexms version; keep in step with the image tag
