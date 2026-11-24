@@ -8,13 +8,13 @@ metadata:
     group: {{ .Values.webapp.group }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  # Remove the old pod before starting the new one: the rda namespace's pod quota
-  # may have no free slot for an extra pod during a rollout (brief downtime is fine)
+  # Start each new pod and wait for it to be ready before stopping an old one, so a
+  # rollout has no downtime (needs one spare pod slot under the rda pod-limit quota)
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: {{ .Values.webapp.name }}
