@@ -15,7 +15,7 @@ webapp:
   ingress:
     visibility: internal                  # internal = UCAR network/VPN only
   container:
-    image: hub.k8s.ucar.edu/gdex/gdexms:b5e14fd   # short SHA of an image pushed by the build workflow
+    image: hub.k8s.ucar.edu/gdex/gdexms:1.0.0     # version of an image built by a GitHub release v<version>
     port: 8080                            # gunicorn port (see Dockerfile)
     requests:
       memory: 256M
