@@ -27,10 +27,10 @@ webapp:
   # defaults to host rda-db.ucar.edu and database rdadb (override with DSSDBHOST / DBNAME).
   env:
     GDEXMS_LOGPATH: "-"                  # app log to stdout/stderr -> Loki / kubectl logs
-    # Entra ID sign-in (see src/gdex_python_gdexms/auth.py); add with the OIDC secrets below:
-    # OIDC_TENANT_ID: "<UCAR Entra directory (tenant) ID>"
-    # OIDC_USERNAME_CLAIM: preferred_username   # claim holding <logname>@ucar.edu
-    # OIDC_ALLOWED_GROUP: "<group object ID or app role>"   # optional; omit to rely on dssgrp alone
+    # Entra ID sign-in (see src/gdex_python_gdexms/auth.py); app registration by UCAR IT
+    OIDC_TENANT_ID: "a85e7773-09e6-4cce-aa58-664ddb1aca42"   # UCAR Entra directory (tenant) ID
+    OIDC_USERNAME_CLAIM: preferred_username                  # claim holding <logname>@ucar.edu
+    OIDC_ALLOWED_GROUP: "5bbe939c-b1b3-4819-b66f-0ed98c06623d"   # gdexms-users group object ID (groups claim in ID token)
   secretStore: rda-ro                     # CIRRUS SecretStore for everything under kv/gdex (per Nick)
   # Each entry maps one OpenBao path/property to an env var in the container.
   # Paths are under kv/gdex. Existing secrets keep their paths (kv/gdex/pgdb01); the app's
@@ -40,13 +40,12 @@ webapp:
     - envVar: FLASK_SECRET_KEY            # Signs session cookies; same value on all replicas
       path: gdex/gdexms
       property: flask_secret_key
-    # Add once UCAR IT registers the Entra ID client and the values are in kv/gdex/gdexms:
-    # - envVar: OIDC_CLIENT_ID
-    #   path: gdex/gdexms
-    #   property: oidc_client_id
-    # - envVar: OIDC_CLIENT_SECRET
-    #   path: gdex/gdexms
-    #   property: oidc_client_secret
+    - envVar: OIDC_CLIENT_ID              # Entra ID application (client) ID; turns sign-in on
+      path: gdex/gdexms
+      property: oidc_client_id
+    - envVar: OIDC_CLIENT_SECRET          # expires 2028-11-22; IT emails a reminder beforehand
+      path: gdex/gdexms
+      property: oidc_client_secret
     - envVar: PGDB01_DSSDBPASS            # dssdb password; rda_python_common reads <NODE>_<KEY>
       path: gdex/pgdb01
       property: dssdbpass
