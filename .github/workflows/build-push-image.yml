@@ -3,19 +3,26 @@
 # GitHub-hosted runner (ubuntu-latest) with the default buildx builder, as CIRRUS advised
 # for small builds; no CIRRUS runner or remote buildkit is needed.
 #
-# Runs only on pushes to main (protected, PR-only) or a manual run from main, never on
-# pull_request / pull_request_target. Third-party actions are pinned to commit hashes.
+# Runs when a GitHub release is published (tag v<version>, e.g. v1.0.1), or by hand on such
+# a tag ("Use workflow from" -> the tag), never on pull_request / pull_request_target.
+# The image is tagged with the version: hub.k8s.ucar.edu/gdex/gdexms:1.0.1. The run fails
+# unless the tag is on main, matches the version in pyproject.toml and __init__.py, and
+# that image tag does not exist yet (a pushed version is never overwritten).
+# Third-party actions are pinned to commit hashes.
+#
+# Releasing: bump the version in pyproject.toml and src/gdex_python_gdexms/__init__.py,
+# PR to main, merge, create release v<version> on main; once the image is pushed, set the
+# tag in helm/gdexms/values.yaml (PR, merge; Argo CD deploys it).
 #
 # Repository secrets needed (CIRRUS registry robot account for the gdex project):
 #   hub_user, hub_password
 # Until both are set, the run succeeds without building and shows a notice.
-# Deploying a new build = set the image tag in helm/gdexms/values.yaml to the short SHA.
 
 name: Build and push image
 
 on:
-  push:
-    branches: [ "main" ]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -30,7 +37,7 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'NCAR/gdex-python-gdexms' && github.ref == 'refs/heads/main'
+    if: github.repository == 'NCAR/gdex-python-gdexms' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
@@ -51,10 +58,23 @@ jobs:
       uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
       with:
         persist-credentials: false
+        fetch-depth: 0
 
-    - name: Get short SHA
+    - name: Check the release tag and version
       if: steps.check.outputs.ready == 'true'
-      run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      run: |
+        VERSION="${GITHUB_REF_NAME#v}"
+        PYPROJECT=$(sed -n 's/^version = "\(.*\)"$/\1/p' pyproject.toml)
+        INIT=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/gdex_python_gdexms/__init__.py)
+        if [ "$VERSION" != "$PYPROJECT" ] || [ "$VERSION" != "$INIT" ]; then
+          echo "::error::tag $GITHUB_REF_NAME does not match pyproject.toml ($PYPROJECT) and __init__.py ($INIT)"
+          exit 1
+        fi
+        if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+          echo "::error::tag $GITHUB_REF_NAME is not on main"
+          exit 1
+        fi
+        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
     - name: Set up Docker Buildx
       if: steps.check.outputs.ready == 'true'
@@ -67,6 +87,14 @@ jobs:
         registry: hub.k8s.ucar.edu
         username: ${{ secrets.hub_user }}
         password: ${{ secrets.hub_password }}
+
+    - name: Refuse to overwrite a pushed version
+      if: steps.check.outputs.ready == 'true'
+      run: |
+        if docker buildx imagetools inspect "$IMAGE:$VERSION" > /dev/null 2>&1; then
+          echo "::error::$IMAGE:$VERSION already exists; bump the version for a new image"
+          exit 1
+        fi
 
     # Start the image and wait for /healthz before pushing, so an image whose
     # workers cannot boot (e.g. a missing library) never reaches the registry
@@ -101,6 +129,6 @@ jobs:
         file: Dockerfile
         platforms: linux/amd64
         push: true
-        tags: ${{ env.IMAGE }}:${{ env.SHORT_SHA }}
+        tags: ${{ env.IMAGE }}:${{ env.VERSION }}
         cache-from: type=registry,ref=${{ env.IMAGE }}:cache
         cache-to: type=registry,ref=${{ env.IMAGE }}:cache,image-manifest=true,mode=max

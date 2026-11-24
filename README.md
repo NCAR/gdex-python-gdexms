@@ -9,8 +9,12 @@ Repository: https://github.com/NCAR/gdex-python-gdexms
 - `helm/gdexms` is the Helm chart (based on the CIRRUS `external-secret-helm` example):
   Deployment, Service, Ingress and an ExternalSecret that maps OpenBao values to env vars
   (`FLASK_SECRET_KEY`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `PGDB01_DSSDBPASS`).
-- `.github/workflows/build-push-image.yml` builds and pushes `hub.k8s.ucar.edu/gdex/gdexms:<short sha>`
-  on pushes to `main`; deploy a build by setting that tag in `helm/gdexms/values.yaml`.
+- `.github/workflows/build-push-image.yml` builds and pushes `hub.k8s.ucar.edu/gdex/gdexms:<version>`
+  when a GitHub release `v<version>` is published. To release: bump the version in
+  `pyproject.toml` and `src/gdex_python_gdexms/__init__.py`, PR and merge to `main`, create
+  release `v<version>` on `main`, then set that image tag in `helm/gdexms/values.yaml`
+  (PR, merge; Argo CD deploys it). A pushed version is never overwritten, and `/healthz`
+  reports the running version.
 - SecretStore `rda-ro`; app secrets in OpenBao `kv/gdex/gdexms`, database password in `kv/gdex/pgdb01`.
   FQDN `gdexms.k8s.ucar.edu` (a `gdex.ucar.edu` CNAME may follow).
 
