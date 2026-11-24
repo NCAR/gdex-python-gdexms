@@ -3,7 +3,7 @@
 <head>
    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
    <link href="css/rda_config.css" rel="stylesheet" type="text/css" />
-   <title>RDAMS CONFIGURATION EDITOR</title>
+   <title>GDEXMS CONFIGURATION EDITOR</title>
    <style type="text/css">
       #left details { margin: 2px 0 2px 4px; }
       #left summary { cursor: pointer; font-weight: bold; }
@@ -22,12 +22,12 @@
 </head>
 <body onload="resizeContainer()" onresize="resizeContainer()">
    <div id="user">{{ name or user }}{% if signed_in %} &middot; <a href="logout" target="_top">Sign out</a>{% endif %}</div>
-   <h1 align="Center">RDAMS POSTGRESQL CONFIGURATION EDITOR</h1>
+   <h1 align="Center">GDEXMS POSTGRESQL CONFIGURATION EDITOR</h1>
    <div id="container">
       <div id="left">
-         <details open><summary>CONFIGURATION MENU</summary>
+         <details open data-group="menu"><summary>CONFIGURATION MENU</summary>
          {% for group, items in menu %}
-            <details><summary>{{ group }}</summary>
+            <details data-group="{{ group }}"><summary>{{ group }}</summary>
                <ul>
                {% for text, page, ready in items %}
                   {% if ready %}
@@ -45,5 +45,21 @@
          <iframe id="iframe1" name="iframe1"></iframe>
       </div>
    </div>
+   <script type="text/javascript">
+      // Remember which menu groups are open, in this browser only
+      (function() {
+         var KEY = 'gdexms.openGroups', saved = null;
+         try { saved = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+         var groups = document.querySelectorAll('#left details[data-group]');
+         groups.forEach(function(d) {
+            if (saved && typeof saved[d.dataset.group] === 'boolean') d.open = saved[d.dataset.group];
+            d.addEventListener('toggle', function() {
+               var state = {};
+               groups.forEach(function(g) { state[g.dataset.group] = g.open; });
+               try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+            });
+         });
+      })();
+   </script>
 </body>
 </html>
